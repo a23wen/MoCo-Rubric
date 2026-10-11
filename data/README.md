@@ -22,9 +22,17 @@ Image paths in the input manifests are relative to `data/`, for example
 `images/pixmo-cap/000001.jpg`. Sample identifiers include the source dataset,
 such as `pixmo-cap:000001`.
 
-If using the image archives, verify and extract them from inside `data/`:
+## Download and extract
+
+Download the training manifests and image archives from
+[Hugging Face](https://huggingface.co/datasets/a23wen/MoCo-Rubric). Run from the
+repository root:
 
 ```bash
+hf download a23wen/MoCo-Rubric \
+  sft.jsonl rl.jsonl SHA256SUMS images/pixmo-cap.tar images/densefusion.tar \
+  --repo-type dataset --local-dir data
+
 cd data
 sha256sum -c SHA256SUMS
 tar -xf images/pixmo-cap.tar
