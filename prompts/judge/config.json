@@ -1,0 +1,5 @@
+{
+  "prompt_version": "qwen36_rubric_reward_v7_reason_pass",
+  "output_contract": "reason_pass",
+  "max_output_tokens": 4096
+}

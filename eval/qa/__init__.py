@@ -1,0 +1,1 @@
+"""Caption-only question answering."""

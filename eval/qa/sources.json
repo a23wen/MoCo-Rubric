@@ -1,0 +1,32 @@
+{
+  "textvqa.py": {
+    "url": "https://raw.githubusercontent.com/facebookresearch/mmf/b0ffc7fba39f210f833c127362146aec01a2f259/mmf/utils/m4c_evaluators.py",
+    "sha256": "e10a99e15c4658f8d0d83a05cc536c835922e701171fce0016718bec021b8c0a",
+    "commit": "b0ffc7fba39f210f833c127362146aec01a2f259"
+  },
+  "internvl_vqa.py": {
+    "url": "https://raw.githubusercontent.com/OpenGVLab/InternVL/2410d1dbf208f0e799459aff9376e5747dbf41a2/internvl_chat/eval/vqa/evaluate_vqa.py",
+    "sha256": "87aa0bff94be04796ef5fac43607fee6562bc917f92ae5fa0a67ee0f3a27bfe6",
+    "commit": "2410d1dbf208f0e799459aff9376e5747dbf41a2"
+  },
+  "docvqa_challenge.py": {
+    "url": "https://raw.githubusercontent.com/OpenGVLab/InternVL/2410d1dbf208f0e799459aff9376e5747dbf41a2/internvl_chat/eval/vqa/infographicsvqa_eval.py",
+    "sha256": "2b5458cb2c88dc74084e065c9d29ffa10a3c4a894c1e135e138cecaeba09a2b3",
+    "commit": "2410d1dbf208f0e799459aff9376e5747dbf41a2"
+  },
+  "blink_test.py": {
+    "url": "https://raw.githubusercontent.com/zeyofu/BLINK_Benchmark/529b0ba055416dea5df79d594e7f62a910d8a308/eval/test_benchmark.py",
+    "sha256": "7f095287e380df586e17c9d503649853f21102a0b8a669bbc2333d3d155d640b",
+    "commit": "529b0ba055416dea5df79d594e7f62a910d8a308"
+  },
+  "blink_match.py": {
+    "url": "https://raw.githubusercontent.com/zeyofu/BLINK_Benchmark/529b0ba055416dea5df79d594e7f62a910d8a308/eval/multiple_choice.py",
+    "sha256": "3cf52e2640850f28f601a02cfc91e1a560c10fc1fcc1b3b77fd49e109830da52",
+    "commit": "529b0ba055416dea5df79d594e7f62a910d8a308"
+  },
+  "captionqa.py": {
+    "url": "https://raw.githubusercontent.com/bronyayang/CaptionQA/f7294897f724c35b95e5f8ea179d2c54a279c91e/qa.py",
+    "sha256": "6d8d1476a42f44df6d2f5a68accb5d69cdb6430770cfe3d44d62087e7d6d54f9",
+    "commit": "f7294897f724c35b95e5f8ea179d2c54a279c91e"
+  }
+}

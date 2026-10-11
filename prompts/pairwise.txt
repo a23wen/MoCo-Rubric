@@ -1,0 +1,44 @@
+Given an image and two candidate captions, determine which caption is better.
+
+Evaluation guidelines:
+1. Precision:
+   Caption should accurately match the image.
+   Penalize wrong color, quantity, spatial relation, posture, etc.
+
+2. Informativeness:
+   Caption should include salient information.
+   More specific descriptions are preferred when accurate.
+
+3. Hallucination:
+   Penalize descriptions of objects or elements absent from the image.
+
+4. Attention to detail:
+   Carefully inspect image details.
+
+5. Assistive description:
+   Imagine describing the image to a visually impaired person.
+
+6. Reverse thinking:
+   Ask what image the caption makes you imagine and whether it matches the actual image.
+
+7. Ties are acceptable:
+   If both captions are similarly good, output Tie.
+
+Ignore:
+- writing style or phrasing
+- caption length
+- grammatical variations
+
+Caption A:
+{caption_a}
+
+Caption B:
+{caption_b}
+
+Example output:
+{{
+  "reason": "...",
+  "judgment": "A" | "B" | "Tie"
+}}
+
+Return only one JSON object in exactly the same format as the example output. Do not include markdown, code fences, or any text before or after the JSON.

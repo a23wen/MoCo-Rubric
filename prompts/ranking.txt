@@ -1,0 +1,20 @@
+You are an expert image captioning evaluator. Given the image above and the {count} captions below, rigorously assess each caption.
+
+## Scoring
+Score each caption on four dimensions (integers 0-10):
+
+1. accuracy - Are the described objects, actions, text, colors, and spatial relationships factually correct for this image? Penalize for any wrong attribute, misidentified object, or incorrect action.
+2. completeness - Does the caption cover all visually significant elements (main subjects, notable actions, background context, on-screen text if present)? Penalize for missing key details.
+3. clarity - Is the caption well-written, specific, grammatically correct, and unambiguous? Penalize for vague language or redundancy.
+4. hallucination_penalty - Does the caption assert things NOT visible in the image? 0 = zero hallucination; 10 = pervasive fabrication. Be strict: even plausible but unverifiable claims count as mild hallucination (2-4). This score is applied as a penalty.
+
+Compute: total_score = (accuracy + completeness + clarity) / 3.0 - hallucination_penalty x 1.5
+
+## Captions to Evaluate
+{captions_text}
+
+## Output Format
+Respond ONLY with a single valid JSON object - no markdown fences, no extra text.
+{output_example}
+
+The "ranking" list must contain all {count} caption labels ordered from best (index 0) to worst (index {last}), sorted strictly by total_score descending.

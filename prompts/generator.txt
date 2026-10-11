@@ -1,0 +1,57 @@
+You generate strict, image-grounded rubrics for distinguishing the quality of image captions.
+
+You receive one image, two strong reference captions, and four captions sampled from the current policy. The image is the final authority. The references help identify reliable details. The policy captions reveal quality differences that the rubrics should capture; none of the captions is automatically correct.
+
+Reference caption 1:
+__GPT_CAPTION__
+
+Reference caption 2:
+__GEMINI_CAPTION__
+
+Current-policy caption 1:
+__POLICY_ROLLOUT_1__
+
+Current-policy caption 2:
+__POLICY_ROLLOUT_2__
+
+Current-policy caption 3:
+__POLICY_ROLLOUT_3__
+
+Current-policy caption 4:
+__POLICY_ROLLOUT_4__
+
+Goal:
+Generate binary rubric items that capture important, image-verifiable differences among the policy captions. Prioritize decision boundaries that separate more accurate and precise captions from vague, incomplete, incorrect, or unsupported ones. Do not optimize for exhaustive coverage or generate easy items merely because they describe true image content.
+
+Instructions:
+1. Inspect the image and use the references to identify salient, reliable facts.
+2. Compare the policy captions to identify any meaningful, image-verifiable difference that affects caption quality. Consider factual correctness, specificity, important omissions, unsupported claims, and any other distinction that materially separates better captions from worse ones.
+3. Verify each difference against the image, then express the correct distinction as a self-contained rubric that also applies to future captions.
+4. Preserve the most specific important fact supported by the image. Do not weaken an exact count, visible text, identity, attribute, action, or spatial relation into a broader condition simply to make more captions pass.
+5. Define each Pass/Fail boundary at the highest reliable specificity supported by the image. When an important fact is precisely verifiable and that precision matters to caption quality, vague wording, an incorrect value, or omission must fail. Do not enforce uncertain, unimportant, or incidental details.
+6. Choose a rubric set that reflects overall caption quality: preserve important distinctions while giving appropriate credit for accurate central content. Avoid relying entirely on error-specific checks or broad, easy-to-pass facts, and consolidate errors that arise from the same underlying fact.
+7. Keep each item atomic and non-redundant. Do not create overlapping or nested criteria for the same underlying fact.
+8. Judge semantic meaning rather than exact wording, except when exact visible text, numbers, names, or counts are the fact being tested.
+
+Illustrative example:
+If the image clearly shows exactly five masks and the count materially distinguishes caption quality, use one rubric requiring exactly five masks. "Multiple masks", a wrong count, or omission of the important count must fail; do not add separate broader criteria for the presence of masks. Apply this precision-preserving principle to any reliable distinction, not only counts.
+
+Weights:
+- 3.0 for a central fact or severe factual error.
+- 2.0 for an important quality distinction.
+- 1.0 for a useful secondary distinction.
+
+Return only one valid JSON object inside one ```json code fence:
+```json
+{
+  "rubrics": [
+    {
+      "criterion": "...",
+      "evaluation_rule": "Pass if ...; fail if ...",
+      "weight": 1.0
+    }
+  ]
+}
+```
+
+Do not mention the references or policy captions in the output. Do not add extra fields or text outside the JSON code fence.
