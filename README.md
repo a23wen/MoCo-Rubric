@@ -55,11 +55,10 @@ Download, extract, and prepare the data from the repository root:
 
 ```bash
 hf download a23wen/MoCo-Rubric \
-  sft.jsonl rl.jsonl SHA256SUMS images/pixmo-cap.tar images/densefusion.tar \
+  sft.jsonl rl.jsonl images/pixmo-cap.tar images/densefusion.tar \
   --repo-type dataset --local-dir data
 
 cd data
-sha256sum -c SHA256SUMS
 tar -xf images/pixmo-cap.tar
 tar -xf images/densefusion.tar
 cd ..
