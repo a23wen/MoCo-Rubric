@@ -1,30 +1,18 @@
 # MoCo-Rubric
 
-## Repository structure
+## Code layout
 
 ```text
-moco/          momentum plugin, rubric rewards, Judge validation, caption inference
-scripts/       training launchers, rollout services, and runtime checks
-data/          data preparation scripts and local training inputs
-prompts/       caption, rubric, Judge, and evaluation prompts
-eval/          pairwise comparison, blind ranking, and caption-only QA
+moco/          momentum plugin, rubric rewards, and caption inference
+scripts/       training, inference, and service launchers
+data/          data preparation scripts
+prompts/       training and evaluation prompts
+eval/          pairwise comparison, ranking, and caption-based QA
 ```
-
-| Script | Purpose |
-|---|---|
-| `scripts/train_sft.sh` | Run shared-model SFT |
-| `scripts/start_rollout.sh` | Start the Policy rollout service |
-| `scripts/start_momentum.sh` | Start the shared Generator/Judge service |
-| `scripts/train_grpo.sh` | Run GRPO training |
-| `scripts/caption.sh` | Generate image captions |
-| `scripts/check_env.py` | Check dependency versions |
-| `scripts/check_servers.py` | Check service health, models, and EMA settings |
-| `scripts/common.sh` | Shared paths, GPU configuration, ports, and EMA defaults |
 
 ## Installation
 
-Use Python 3.11 and CUDA 12.8. Dependencies are pinned in `requirements.txt`,
-including ms-swift `4.2.0.dev0`, vLLM `0.11.0`, and PyTorch `2.8.0`.
+Use Python 3.11 and CUDA 12.8.
 
 ```bash
 git clone https://github.com/a23wen/MoCo-Rubric.git
@@ -39,19 +27,8 @@ python scripts/check_env.py
 
 ## Data preparation
 
-Training data is available on [Hugging Face](https://huggingface.co/datasets/a23wen/MoCo-Rubric).
-The extracted files follow this layout:
-
-```text
-data/
-├── sft.jsonl
-├── rl.jsonl
-└── images/
-    ├── pixmo-cap/
-    └── densefusion/
-```
-
-Download, extract, and prepare the data from the repository root:
+Download the [training data](https://huggingface.co/datasets/a23wen/MoCo-Rubric)
+and run the preparation scripts from the repository root:
 
 ```bash
 hf download a23wen/MoCo-Rubric \
@@ -67,27 +44,35 @@ python data/prepare_sft.py
 python data/prepare_rl.py
 ```
 
-The scripts validate the records and resolve image paths, producing
-`outputs/data/sft.jsonl` and `outputs/data/rl.jsonl`. These are the training
-launchers' default inputs. Rerun preparation when the checkout location changes.
-See [data/README.md](data/README.md) for archive extraction, input fields, and
-`build_sft.py` usage.
+After extraction:
+
+```text
+data/
+├── sft.jsonl
+├── rl.jsonl
+└── images/
+    ├── pixmo-cap/
+    └── densefusion/
+```
+
+The scripts write training inputs to `outputs/data/` with local image paths.
+Run them again if you move the repository. See the [data guide](data/README.md)
+for input formats and custom paths.
 
 ## SFT
+
+Train `Qwen/Qwen3-VL-8B-Instruct` with the shared SFT data:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 bash scripts/train_sft.sh
 ```
 
-The default model is `Qwen/Qwen3-VL-8B-Instruct`. The launcher uses full-parameter
-training, one epoch, learning rate `1e-5`, per-device batch size 4, gradient
-accumulation 2, cosine decay, and 5% warmup. Data shuffling is disabled.
-Checkpoints are written under `outputs/sft/`.
+Checkpoints are saved under `outputs/sft/`.
 
 ## GRPO
 
-Run the rollout service, momentum service, and trainer on separate GPU pools.
-Set the checkpoint path and service hosts on each participating node:
+Run the Policy rollout service, Generator/Judge service, and trainer on separate
+GPU pools. Set these variables on each node, using the same SFT checkpoint path:
 
 ```bash
 export SFT_MODEL=/absolute/path/to/sft/checkpoint
@@ -96,50 +81,44 @@ export MOMENTUM_SERVER_HOST=momentum-node
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 ```
 
-Use the same checkpoint path across the nodes. Start the Policy rollout service:
+On the Policy rollout node:
 
 ```bash
 bash scripts/start_rollout.sh
 ```
 
-Start the Generator/Judge service on its assigned node:
+On the Generator/Judge node:
 
 ```bash
 bash scripts/start_momentum.sh
 ```
 
-Once both services are ready, start the trainer:
+On the training node, after both services are ready:
 
 ```bash
 bash scripts/train_grpo.sh
 ```
 
-The trainer checks both services before starting. Service ports default to
-8000/8001, with weight-transfer ports 51216/51217. Configure network access
-between the participating nodes for these ports.
+Allow connections between the nodes on service ports 8000/8001 and
+weight-transfer ports 51216/51217. Checkpoints are saved under `outputs/grpo/`.
 
-Training defaults are one epoch, learning rate `1e-6`, per-device batch size 8,
-gradient accumulation 2, and 16 generations per image. Checkpoints are saved
-under `outputs/grpo/`, including the `momentum/` state.
+To resume, restart both services from `SFT_MODEL` and set
+`MOMENTUM_RESUME_CHECKPOINT` to the saved GRPO checkpoint before launching the trainer.
 
-To resume, restart the services from `SFT_MODEL`, then launch the trainer with
-`MOMENTUM_RESUME_CHECKPOINT` pointing to a saved GRPO checkpoint.
+### Configuration
 
-## Configuration
-
-| Variable | Purpose or default |
+| Variable | Purpose |
 |---|---|
-| `BASE_MODEL` | SFT model; defaults to `Qwen/Qwen3-VL-8B-Instruct` |
-| `SFT_MODEL` | Checkpoint used to initialize GRPO and both services |
-| `SFT_DATA`, `RL_DATA` | Override the prepared training inputs |
-| `OUTPUT_DIR` | Override the training output directory |
-| `CUDA_VISIBLE_DEVICES` | GPU pool for the current process |
+| `BASE_MODEL` | SFT model; default `Qwen/Qwen3-VL-8B-Instruct` |
+| `SFT_MODEL` | SFT checkpoint for GRPO and both services |
+| `SFT_DATA`, `RL_DATA` | Training input paths |
+| `OUTPUT_DIR` | Training output directory |
 | `MOMENTUM_DECAY` | EMA coefficient; default `0.99` |
 | `MOMENTUM_UPDATE_INTERVAL` | EMA update interval; default `1` |
-| `MOMENTUM_RESUME_CHECKPOINT` | Saved GRPO checkpoint for resuming training |
+| `MOMENTUM_RESUME_CHECKPOINT` | GRPO checkpoint to resume |
 
-Training and service launchers forward additional command-line arguments to
-ms-swift. Port defaults are defined in `scripts/common.sh`.
+Shared settings are in `scripts/common.sh`. Training and service launchers
+accept additional ms-swift arguments.
 
 ## Caption inference
 
@@ -151,18 +130,15 @@ bash scripts/caption.sh \
   --gpus 0,1,2,3,4,5,6,7
 ```
 
-Input rows contain `image` and optionally `image_id` and reference metadata.
-Image paths are relative to `data/`. Output rows retain the input fields and
-add `response`. Generation uses temperature 0, top-p 1, and a 1,024-token output
-limit. Add `--prepare-only` to prepare the inference inputs.
+Each input row contains `image` and an optional `image_id`. Image paths are
+relative to `data/`; the output adds a `response` field with the caption.
 
 ## Evaluation
 
 | Script | Purpose |
 |---|---|
-| `eval/pairwise.py` | Build caption pairs, run judging, and summarize wins/losses/ties |
-| `eval/ranking.py` | Build anonymous caption groups, run ranking, and aggregate scores |
-| `eval/qa/run.py` | Prepare caption-based QA inputs, generate answers, and score them |
-| `eval/qa/download_metrics.py` | Download the scoring code listed in `eval/qa/sources.json` |
+| `eval/pairwise.py` | Compare two sets of captions |
+| `eval/ranking.py` | Rank multiple sets of captions |
+| `eval/qa/run.py` | Answer and score questions using captions |
 
-See [eval/README.md](eval/README.md) for commands and API configuration.
+See the [evaluation guide](eval/README.md) for commands and API settings.
