@@ -55,6 +55,10 @@ data/
     └── densefusion/
 ```
 
+`sft.jsonl` contains `messages`, `images` for visual examples, and `sample_uid`
+for Generator and Judge examples. `rl.jsonl` contains `messages`, `images`,
+`sample_uid`, `gpt_caption`, and `gemini_caption`.
+
 The scripts write training inputs to `outputs/data/` with local image paths.
 Run them again if you move the repository. See the [data guide](data/README.md)
 for input formats and custom paths.

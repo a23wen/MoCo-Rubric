@@ -30,17 +30,16 @@ python data/prepare_sft.py \
 
 - `messages`: conversation ending with an assistant training target.
 - `images`: image paths for Policy and Generator examples; Judge examples are text-only.
+- `sample_uid`: sample identifier included in Generator and Judge examples.
 
 ### RL
 
 | Field | Contents |
 |---|---|
 | `sample_uid` | Unique identifier, such as `pixmo-cap:000001` |
-| `sample_id`, `source_dataset` | Image identifier and source dataset |
 | `messages` | Conversation ending with the user caption prompt |
 | `images` | One image path |
 | `gpt_caption`, `gemini_caption` | Reference captions |
-| `reference_caption` | Combined reference text |
 
 ## Evaluation inputs
 
