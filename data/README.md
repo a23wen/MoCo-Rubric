@@ -39,7 +39,6 @@ python data/prepare_sft.py \
 | `sample_id`, `source_dataset` | Image identifier and source dataset |
 | `messages` | Conversation ending with the user caption prompt |
 | `images` | One image path |
-| `visual_info` | Visual annotations |
 | `gpt_caption`, `gemini_caption` | Reference captions |
 | `reference_caption` | Combined reference text |
 
