@@ -1,142 +1,118 @@
----
-language:
-- en
-task_categories:
-- image-to-text
-pretty_name: MoCo-Rubric Training Data
-configs:
-- config_name: sft
-  data_files:
-  - split: train
-    path: sft.jsonl
-- config_name: rl
-  data_files:
-  - split: train
-    path: rl.jsonl
----
+# Data preparation
 
-# MoCo-Rubric Training Data
+Run the commands below from the repository root.
 
-Training data will be released separately on Hugging Face. The repository and
-revision will be added after that release; there is no download link yet.
-Training manifests, archives, and extracted images belong in this `data/`
-directory. They are ignored by Git and will be uploaded separately from the
-code. Model weights and evaluation datasets are not included in the training
-data release.
-
-Training layout after downloading and extracting the image archives:
+## Layout
 
 ```text
 data/
-├── README.md
-├── SHA256SUMS
 ├── sft.jsonl
 ├── rl.jsonl
+├── SHA256SUMS
 ├── images/
 │   ├── pixmo-cap.tar
 │   ├── densefusion.tar
 │   ├── pixmo-cap/
 │   └── densefusion/
-└── benchmarks/                 # separately supplied evaluation inputs
+└── benchmarks/
+    └── qa/
 ```
 
-Image paths in all distributed manifests must be relative to `data/`, for
-example `images/pixmo-cap/000001.jpg`. Preserve dataset-qualified sample IDs;
-images from different datasets must not be aligned by filename alone.
-An external download directory is also supported through `--data-root`.
-The archives preserve image bytes and formats without resizing or re-encoding.
-Keeping both archives and extracted images requires approximately 12 GB.
+Image paths in the input manifests are relative to `data/`, for example
+`images/pixmo-cap/000001.jpg`. Sample identifiers include the source dataset,
+such as `pixmo-cap:000001`.
 
-## Training
+If using the image archives, verify and extract them from inside `data/`:
 
-`sft.jsonl` contains ms-swift `messages` with an assistant target, an optional
-`images` list, and preserved role/provenance fields. Policy and Generator
-records include images; Judge records are text-only. The intended mixed set
-contains 20,000 records in a 2:1:1 Policy:Generator:Judge ratio. Preserve its
-published ordering and metadata.
+```bash
+cd data
+sha256sum -c SHA256SUMS
+tar -xf images/pixmo-cap.tar
+tar -xf images/densefusion.tar
+cd ..
+```
 
-`rl.jsonl` contains `sample_uid`, `sample_id`, `source_dataset`, `messages`
-ending in a user prompt, one image in `images`, structured `visual_info`,
-and two reference strings named `gpt_caption` and `gemini_caption`.
-`reference_caption` combines the two references. These field names retain
-the original implementation's schema.
-Do not include precomputed `rubrics`: the momentum Generator constructs them
-from current Policy candidates. Other provenance fields are preserved.
-
-Convert downloaded relative image paths into local training inputs:
+## Prepare training inputs
 
 ```bash
 python data/prepare_sft.py
 python data/prepare_rl.py
 ```
 
-These commands validate the manifests and write `outputs/data/sft.jsonl` and
-`outputs/data/rl.jsonl`. They never edit the downloaded manifests or move images.
-For another location, pass `--input`, `--data-root`, and `--output` explicitly.
-The generated files contain machine-local paths and are excluded from Git;
-regenerate them whenever the checkout location changes.
+Both scripts use `_prepare.py` to validate records and convert relative image
+paths to local absolute paths. They preserve record order and metadata and
+write `outputs/data/sft.jsonl` and `outputs/data/rl.jsonl`.
 
-`build_sft.py` retains the original deterministic mixing procedure for users
-who have the four aligned role files. Its `--help` lists the inputs. The normal
-training path uses the prepared mixed manifest from the data release, without
-regenerating teacher annotations.
-
-The selected SFT source is `shared_sft_2_1_1_20k_seed42.jsonl` (20,000
-records). The released RL set contains 5,000 examples: 2,500 PixMo-Cap and
-2,500 DenseFusion. It restores `pixmo-cap:001577` from the original image
-selection, using its existing GPT reference and visual information plus a
-new `gemini-3.1-pro-preview` reference. The added record includes
-`release_added` and `reference_sources` metadata. The original training
-manifest had 4,999 examples; existing paper checkpoints were not retrained
-as part of this release.
-
-The image archives contain 7,500 files per source dataset. Both SFT references
-to `DenseFusion:011586` use the repaired RGB image
-`images/densefusion/011586.png`; the old JPG is excluded. Original SFT text,
-targets, teacher metadata, and record order are preserved. Original RL
-records retain all non-path fields and their relative order.
-
-Download `sft.jsonl`, `rl.jsonl`, `SHA256SUMS`, `images/pixmo-cap.tar`, and
-`images/densefusion.tar` into `data/`. Keep this README. From inside `data/`,
-verify and unpack the images before running the preparation commands above:
+Use `--input`, `--data-root`, and `--output` to specify another location:
 
 ```bash
-sha256sum -c SHA256SUMS
-tar -xf images/pixmo-cap.tar
-tar -xf images/densefusion.tar
+python data/prepare_sft.py \
+  --input data/sft.jsonl \
+  --data-root data \
+  --output outputs/data/sft.jsonl
 ```
 
-## Caption and QA evaluation inputs
+`prepare_rl.py` accepts the same options. Rerun preparation after moving the
+checkout so the generated paths match its new location.
 
-Caption benchmark files go under `data/benchmarks/` (`pixmo-cap.jsonl`,
-`densefusion.jsonl`, `caparena.jsonl`, `comprecap.jsonl`, and `docci.jsonl`).
-QA inputs go under `data/benchmarks/qa/`, one JSONL file per benchmark listed
-below. These files are supplied separately and are not in the training package.
+### SFT fields
 
-A caption benchmark JSONL row contains `image` and optionally `image_id` and
-reference metadata. `scripts/caption.sh` emits the same fields plus `response`.
-For pairwise evaluation, both caption files must have identical `image` IDs.
+- `messages`: ms-swift conversation ending with an assistant training target.
+- `images`: image paths for Policy and Generator records. Judge records are text-only.
+- Additional role and source metadata is preserved by the preparation script.
 
-QA files contain one benchmark per file, with a unique `sample_id` and `bench`:
+### RL fields
 
-- CaptionQA: `image_id`, `question`, `choices`, `answer`, `permutation`, `domain`.
-  `answer` is the exact correct option text, not its letter. Preserve the
-  published option permutation; do not shuffle again.
-- BLINK: ordered `image_ids`, `question`, `options`, `official_prompt`,
-  `references` (the correct letter), and `category`.
-- TextVQA, DocVQA, ChartQA: `image_ids`, `question`, `references`, `category`.
+| Field | Contents |
+|---|---|
+| `sample_uid` | Unique dataset-qualified identifier |
+| `sample_id` | Identifier within the source dataset |
+| `source_dataset` | Dataset name |
+| `messages` | Conversation ending with the user caption prompt |
+| `images` | One image path |
+| `visual_info` | Structured visual annotations |
+| `gpt_caption`, `gemini_caption` | Reference captions |
+| `reference_caption` | Combined reference text |
 
-The generated caption file for QA must provide `image_id` and `response` for
-every requested image. Images/questions/option permutations remain external
-data, and their release is separate from these scripts.
+The training plugin generates rubrics during GRPO.
 
-`python eval/qa/download_metrics.py` downloads only pinned upstream scoring
-and prompt code to ignored `data/metrics/`; it does not download a dataset.
+## Build the SFT mixture
 
-## Source datasets
+`build_sft.py` combines aligned Policy, Generator, and Judge files into grouped
+SFT records. It writes the mixed dataset, a grouping manifest, and a summary.
+
+```bash
+python data/build_sft.py --help
+```
+
+Its input arguments are `--policy-10000`, `--aligned-policy-5000`,
+`--generator-5000`, and `--judge-5000`. Set `--output`, `--manifest`, and
+`--summary` for the generated files. The default random seed is 42.
+
+## Evaluation inputs
+
+Caption benchmark manifests go under `data/benchmarks/`. Each row contains
+`image` and optionally `image_id` and reference metadata. `scripts/caption.sh`
+adds a `response` field when generating captions. Pairwise input files are
+aligned by their unique `image` identifiers.
+
+QA manifests go under `data/benchmarks/qa/`, with one JSONL file per benchmark.
+Each record contains `sample_id` and `bench`, plus:
+
+| Benchmark | Fields |
+|---|---|
+| CaptionQA | `image_id`, `question`, `choices`, `answer`, `permutation`, `domain` |
+| BLINK | Ordered `image_ids`, `question`, `options`, `official_prompt`, `references`, `category` |
+| TextVQA / DocVQA / ChartQA | `image_ids`, `question`, `references`, `category` |
+
+CaptionQA uses the exact option text in `answer`; BLINK uses the correct letter
+in `references`. QA caption files provide `image_id` and `response` matching
+the question manifests.
+
+`eval/qa/download_metrics.py` installs the scoring and prompt code listed in
+`eval/qa/sources.json` into `data/metrics/`.
+
+## Dataset sources
 
 - [PixMo-Cap](https://huggingface.co/datasets/allenai/pixmo-cap)
 - [DenseFusion-1M](https://huggingface.co/datasets/BAAI/DenseFusion-1M)
-
-Refer to the original dataset cards for their notices, licenses, and citations.
-This release does not relicense the source images.
